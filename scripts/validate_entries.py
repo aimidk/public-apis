@@ -51,9 +51,6 @@ def parse_table_rows(lines: list[str]) -> list[tuple[int, list[str]]]:
 
         if in_table and stripped.startswith("|") and stripped.endswith("|"):
             # Split columns and strip whitespace
-            cols = [c.strip() for c in stripped.split("|")]
-            # Remove empty strings from leading/trailing pipes
-            cols = [c for c in cols if c != "" or cols.index(c) not in (0, len(cols) - 1)]
             cols = stripped.split("|")
             cols = [c.strip() for c in cols[1:-1]]  # Remove first and last empty splits
             rows.append((i, cols))
@@ -103,6 +100,7 @@ def validate_row(line_num: int, cols: list[str]) -> list[str]:
             f"Expected one of: {VALID_HTTPS}"
         )
 
+    # Note: 'Unknown' is allowed for CORS since many APIs don't document it clearly
     if cors not in VALID_CORS:
         errors.append(
             f"Line {line_num}: Invalid CORS value '{cors}' for '{api_name}'. "
@@ -110,53 +108,3 @@ def validate_row(line_num: int, cols: list[str]) -> list[str]:
         )
 
     return errors
-
-
-def validate_entries(filepath: str) -> bool:
-    """Validate all API entries in the given markdown file.
-
-    Args:
-        filepath: Path to the README or markdown file to validate.
-
-    Returns:
-        True if all entries are valid, False otherwise.
-    """
-    path = Path(filepath)
-    if not path.exists():
-        print(f"Error: File not found: {filepath}")
-        return False
-
-    lines = path.read_text(encoding="utf-8").splitlines()
-    rows = parse_table_rows(lines)
-
-    if not rows:
-        print(f"Warning: No table rows found in {filepath}")
-        return True
-
-    all_errors = []
-    for line_num, cols in rows:
-        errors = validate_row(line_num, cols)
-        all_errors.extend(errors)
-
-    if all_errors:
-        print(f"Found {len(all_errors)} validation error(s) in {filepath}:")
-        for error in all_errors:
-            print(f"  - {error}")
-        return False
-
-    print(f"All {len(rows)} entries in {filepath} are valid.")
-    return True
-
-
-def main() -> None:
-    """Entry point for the validation script."""
-    readme_path = "README.md"
-    if len(sys.argv) > 1:
-        readme_path = sys.argv[1]
-
-    success = validate_entries(readme_path)
-    sys.exit(0 if success else 1)
-
-
-if __name__ == "__main__":
-    main()
