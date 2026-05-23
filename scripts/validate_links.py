@@ -14,7 +14,7 @@ from typing import Optional
 import requests
 
 # Timeout for each HTTP request in seconds
-REQUEST_TIMEOUT = 10
+REQUEST_TIMEOUT = 15  # increased from 10 - some APIs are slow to respond
 
 # Delay between requests to avoid rate limiting
 REQUEST_DELAY = 0.5
@@ -98,31 +98,19 @@ def validate_links(filepath: str, verbose: bool = False) -> bool:
                 if verbose:
                     print(f"[{i}/{len(urls)}] OK ({status_code}): {url_str}")
             else:
-                reason = error if error else f"HTTP {status_code}"
-                print(f"[{i}/{len(urls)}] FAILED ({reason}): {url_str}")
-                failed_links.append((url_str, reason))
+                error_detail = error if error else f"HTTP {status_code}"
+                print(f"[{i}/{len(urls)}] FAIL ({error_detail}): {url_str}")
+                failed_links.append((url_str, error_detail))
 
             time.sleep(REQUEST_DELAY)
 
-    print(f"\n--- Validation Summary ---")
-    print(f"Total URLs checked : {len(urls)}")
-    print(f"Passed             : {len(urls) - len(failed_links)}")
-    print(f"Failed             : {len(failed_links)}")
-
-    if failed_links:
-        print("\nFailed URLs:")
-        for url, reason in failed_links:
-            print(f"  - {url} ({reason})")
-        return False
-
-    print("\nAll links are valid!")
-    return True
+    print(f"\nValidation complete. {len(failed_links)} of {len(urls)} links failed.")
+    return len(failed_links) == 0
 
 
-def main() -> None:
-    """Entry point for the link validation script."""
+def main():
     parser = argparse.ArgumentParser(
-        description="Validate HTTP links in a markdown file."
+        description="Validate links in a markdown file."
     )
     parser.add_argument(
         'filepath',
