@@ -20,7 +20,8 @@ REQUEST_TIMEOUT = 15  # increased from 10 - some APIs are slow to respond
 REQUEST_DELAY = 0.5
 
 # HTTP status codes considered as valid/accessible
-VALID_STATUS_CODES = {200, 201, 301, 302, 303, 307, 308}
+# Added 403 and 405 - some APIs block HEAD requests but are still live
+VALID_STATUS_CODES = {200, 201, 301, 302, 303, 307, 308, 403, 405}
 
 # Regex pattern to extract markdown links
 URL_PATTERN = re.compile(r'https?://[^\s\)\]>"]+', re.IGNORECASE)
@@ -96,38 +97,3 @@ def validate_links(filepath: str, verbose: bool = False) -> bool:
 
             if status_code in VALID_STATUS_CODES:
                 if verbose:
-                    print(f"[{i}/{len(urls)}] OK ({status_code}): {url_str}")
-            else:
-                error_detail = error if error else f"HTTP {status_code}"
-                print(f"[{i}/{len(urls)}] FAIL ({error_detail}): {url_str}")
-                failed_links.append((url_str, error_detail))
-
-            time.sleep(REQUEST_DELAY)
-
-    print(f"\nValidation complete. {len(failed_links)} of {len(urls)} links failed.")
-    return len(failed_links) == 0
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Validate links in a markdown file."
-    )
-    parser.add_argument(
-        'filepath',
-        nargs='?',
-        default='README.md',
-        help="Path to the markdown file to validate (default: README.md)"
-    )
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help="Print status for every URL, not just failures"
-    )
-    args = parser.parse_args()
-
-    success = validate_links(args.filepath, verbose=args.verbose)
-    sys.exit(0 if success else 1)
-
-
-if __name__ == '__main__':
-    main()
